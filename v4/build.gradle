@@ -16,7 +16,7 @@ ext {
   localInterlokRepo = project.findProperty('localInterlokRepo') ?: 'unknown'
   nexusBaseUrl  = 'https://nexus.adaptris.net'
   log4j2Version='2.14.1'
-  slf4jVersion='1.7.30'
+  slf4jVersion='1.7.31'
   interlokVersion = project.findProperty('interlokVersion') ?: '4.0.0-RELEASE'
   verifyReportConfigCheckAvailable = '3.12-SNAPSHOT'
   interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
