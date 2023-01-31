@@ -19,7 +19,7 @@ ext {
   log4j2Version='2.19.0'
   slf4jVersion='2.0.3'
   // Make semi-required optional components have an explicit version
-  interlokVersion = project.findProperty('interlokVersion') ?: '4.6.0-RELEASE'
+  interlokVersion = project.findProperty('interlokVersion') ?: '4.7.0-RELEASE'
   interlokHelperVersion = project.findProperty('interlokVersion') ?: interlokVersion
   interlokServiceTesterVersion = project.findProperty('interlokServiceTesterVersion') ?: interlokVersion
   interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
