@@ -20,6 +20,8 @@ jobs:
            java-version: 8
          - interlok-version: v4
            java-version: 11
+         - interlok-version: v5
+           java-version: 17
 
     steps:
     - name: Checkout
