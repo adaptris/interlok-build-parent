@@ -1,0 +1,648 @@
+import org.gradle.util.VersionNumber
+
+buildscript {
+  repositories {
+    maven { url 'https://plugins.gradle.org/m2/' }
+  }
+  dependencies {
+    classpath 'org.owasp:dependency-check-gradle:8.2.1'
+  }
+}
+
+apply plugin: org.owasp.dependencycheck.gradle.DependencyCheckPlugin
+apply plugin: "distribution"
+apply plugin: "java-library"
+
+ext {
+  localInterlokRepo = project.findProperty('localInterlokRepo') ?: 'unknown'
+  nexusBaseUrl  = 'https://nexus.adaptris.net'
+  log4j2Version='2.19.0'
+  slf4jVersion='2.0.3'
+  // Make semi-required optional components have an explicit version
+  interlokVersion = project.findProperty('interlokVersion') ?: '5.0-RELEASE'
+  interlokHelperVersion = project.findProperty('interlokVersion') ?: interlokVersion
+  interlokServiceTesterVersion = project.findProperty('interlokServiceTesterVersion') ?: interlokVersion
+  interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
+
+  // Handles the situation where interlokVersion diverges from baseline versions of the other jars.
+  // e.g. 4.4.1-RELEASE interlok doesn't have a corresponding build of 4.4.1-varsub or 4.4.1-service-tester.
+  // key= interlokVersion
+  // value= the required var-sub version
+  interlokPatchVersionMap = [
+    "4.4.1-RELEASE" : "4.4.0-RELEASE"
+  ]
+  // key= interlokVersion
+  // value= the required service-tester-version
+  interlokServiceTesterPatchVersionMap = [
+    "4.2.0-RELEASE" : "4.2.1-RELEASE",
+    "4.4.1-RELEASE" : "4.4.0-RELEASE"
+  ]
+  interlokUiPatchVersionMap = [
+    "4.4.1-RELEASE" : "4.4.0-RELEASE"
+  ]
+
+  verifyReportConfigCheckAvailable = '3.12-SNAPSHOT'
+
+  interlokSourceConfig = "${projectDir}/src/main/interlok/config"
+  interlokTmpConfigDirectory = "${buildDir}/tmp/config"
+  interlokTmpLibDirectory = "${buildDir}/tmp/lib"
+  interlokTmpWarDirectory = "${buildDir}/tmp/war"
+  interlokTmpDocsDirectory = "${buildDir}/tmp/docs"
+  interlokTmpServiceTestLog4j = "${buildDir}/tmp/serviceTestLog4j/log4j2.xml"
+
+  interlokDistDirectory = project.findProperty('interlokDistDirectory') ?: "${buildDir}/distribution"
+
+  interlokServiceTestOutput = project.findProperty('interlokServiceTestOutput') ?: "${buildDir}/reports/unit"
+  interlokServiceTestReportDir = project.findProperty('interlokServiceTestReportDir') ?: "${buildDir}/reports/html"
+  interlokServiceTestDefinition = project.findProperty('interlokServiceTestDefinition') ?: "$projectDir/src/test/interlok/service-test.xml"
+
+  buildEnv = project.findProperty('buildEnv') ?: 'NoBuildEnv'
+  includeWar = project.findProperty('includeWar') ?: 'false'
+  additionalTemplatedConfiguration = project.findProperty('additionalTemplatedConfiguration') ?: []
+  additionalTemplatedProperties = project.findProperty('additionalTemplatedProperties') ?: []
+  interlokParentBaseUrl = project.findProperty('interlokParentBaseUrl') ?: 'https://raw.githubusercontent.com/adaptris/interlok-build-parent/main'
+  verifyLog4j = "${interlokParentBaseUrl}/verifyLog4j2.xml"
+  serviceTestLog4j = "${interlokParentBaseUrl}/serviceTestLog4j2.xml"
+  verifyMode  = project.hasProperty('verifyMode') ? VerifyModes.valueOf(project.getProperty('verifyMode')) : VerifyModes.WARN
+  interlokVerifyTextReport = "${buildDir}/reports/interlok/verify/report.txt"
+  interlokVerifyTextReportFile = new File(interlokVerifyTextReport)
+  interlokVerifySonarReport = "${buildDir}/reports/interlok/verify/report.json"
+  interlokVerifyEnvironmentPropertiesFile = project.findProperty('interlokVerifyEnvironmentPropertiesFile') ?: "${projectDir}/.env"
+  interlokVerifyLicenseProperties = System.env.containsKey("INTERLOK_LICENSE_KEY") ? [ "interlok.license.key": "$System.env.INTERLOK_LICENSE_KEY" ] : [:]
+  interlokVerifyCategory = project.findProperty('interlokVerifyCategory') ?: "CODE_SMELL"
+  interlokVerifyLevel = project.findProperty('interlokVerifyLevel') ?: "INFO"
+  interlokVerifyPrefix = "$interlokVerifyCategory,$interlokVerifyLevel,"
+}
+
+enum VerifyModes {
+  STRICT, WARN
+}
+
+defaultTasks 'clean', 'check'
+
+ext.buildDetails = [
+  isDevMode: { ->
+    return buildEnv.equals("dev")
+  },
+
+  isIncludeWar: { ->
+    return includeWar.equals("true") || buildEnv.equals("dev")
+  }
+]
+
+ext.interlokPatch = [
+  serviceTesterVersion: { ->
+    def computedVersion = interlokServiceTesterVersion
+    if (interlokServiceTesterVersion.equals(interlokVersion)) {
+      interlokServiceTesterPatchVersionMap.each { iv, pv ->
+        if (interlokVersion.equals(iv)) {
+          computedVersion=pv
+        }
+      }
+    }
+    return computedVersion
+  },
+  helperVersion: { ->
+    def computedVersion = interlokHelperVersion
+    if (interlokHelperVersion.equals(interlokVersion)) {
+      interlokPatchVersionMap.each { iv, pv ->
+        if (interlokVersion.equals(iv)) {
+          computedVersion= pv
+        }
+      }
+    }
+    return computedVersion
+  },
+  uiVersion: { ->
+    def computedVersion = interlokUiVersion
+    if (interlokUiVersion.equals(interlokVersion)) {
+      interlokUiPatchVersionMap.each { iv, pv ->
+        if (interlokVersion.equals(iv)) {
+          computedVersion= pv
+        }
+      }
+    }
+    return computedVersion
+  }
+]
+
+ext.verifyReport = [
+
+  verifyViaConfigCheck: { ->
+    if (interlokVersion.startsWith("latest.")) {
+      return true
+    }
+    return VersionNumber.parse( interlokVersion ) >= VersionNumber.parse( verifyReportConfigCheckAvailable )
+  },
+
+  verifyReportFile: { ->
+    if (interlokVerifyTextReportFile.exists()) {
+      def content = java.nio.file.Files.readAllLines(interlokVerifyTextReportFile.toPath())
+      def warningsCount = content.size()
+      // Has the sad effect of printing out CODE_SMELL, but that's acceptable.
+      if (warningsCount > 0) {
+        println "\nConfiguration warnings [$warningsCount]:"
+        content.each {
+          println it.replaceAll(interlokVerifyPrefix, "")
+        }
+        if(verifyMode == VerifyModes.STRICT) {
+          throw new GradleException("Interlok Verify contains warnings [$warningsCount]")
+        }
+      }
+    }
+  },
+
+  init: { ->
+    delete interlokVerifyTextReportFile
+    mkdir(interlokVerifyTextReportFile.getParentFile())
+  }
+]
+
+def loadPropertiesFromFile(filepath) {
+  Properties properties = new Properties()
+  File propertiesFile = new File(filepath)
+  if(propertiesFile.exists()){
+    propertiesFile.withInputStream {
+      properties.load(it)
+    }
+  }
+  return properties
+}
+
+def asFileUrl(filepath) {
+  return "file:///" + new java.net.URI(null, filepath, null).toASCIIString();
+}
+
+
+def overwriteWithPropertiesTemplate(file, dir){
+    if(new File("${dir}/${file}-${buildEnv}.properties").exists()){
+        ant.copy(file: "${dir}/${file}-${buildEnv}.properties", tofile: "${dir}/${file}.properties", overwrite: 'true')
+    }
+    delete fileTree(dir) { include "${file}-*.properties" }
+}
+
+def overwriteWithTemplate(file, dir){
+    if(new File("${dir}/${file}.${buildEnv}").exists()){
+        ant.copy(file: "${dir}/${file}.${buildEnv}", tofile: "${dir}/${file}", overwrite: 'true')
+    }
+    delete fileTree(dir) { include "${file}.*" }
+}
+
+distTar.enabled=false
+distZip.enabled=false
+
+configurations {
+  interlokRuntime{}
+  interlokTestRuntime.extendsFrom interlokRuntime
+  interlokJavadocs{}
+  interlokVerify{}
+  interlokVerifyReport{}
+  interlokWar{}
+  antJunit{}
+  all*.exclude group: 'c3p0'
+  all*.exclude group: 'commons-logging'
+  all*.exclude group: 'javamail'
+  all*.exclude group: 'javax.mail', module: 'mail'
+  all*.exclude group: 'org.glassfish.hk2.external'
+  all*.exclude group: 'xalan', module: 'xalan'
+  all*.exclude group: 'net.sf.saxon', module: 'saxon'
+  // Exclude because com.fasterxml.woodstox:woodstox-core should take precedence
+  // however, stax2-api still lives on in the org.codehaus.woodstox group
+  all*.exclude group: 'org.codehaus.woodstox', module: 'woodstox-core-asl'
+  all*.exclude group: 'org.eclipse.jetty.orbit', module: 'javax.mail.glassfish'
+  all*.exclude group: 'javax.el', module: 'javax.el-api'
+  all*.exclude group: 'org.hibernate', module: 'hibernate-validator'
+  // INTERLOK-3197 exclude old javax.mail
+  all*.exclude group: 'com.sun.mail', module: 'javax.mail'
+  all*.exclude group: 'javax.validation', module: 'validation-api'
+  all*.exclude group: 'javax.activation', module: 'activation'
+  all*.exclude group: 'javax.activation', module: 'javax.activation-api'
+}
+
+
+if (interlokVersion.endsWith("SNAPSHOT") || interlokUiVersion.endsWith("SNAPSHOT")) {
+  allprojects {
+    configurations.all {
+      resolutionStrategy.cacheChangingModulesFor 15, "minutes"
+    }
+  }
+}
+
+repositories {
+    mavenCentral() {
+      content {
+        excludeGroupByRegex "com\\.adaptris.*"
+      }
+    }
+    if (localInterlokRepo != "unknown") {
+      maven {
+        url "$localInterlokRepo"
+        allowInsecureProtocol true
+      }
+    }
+    maven { url "${nexusBaseUrl}/nexus/content/groups/public" }
+    maven { url "${nexusBaseUrl}/nexus/content/groups/interlok" }
+}
+
+dependencies {
+  interlokRuntime ("com.adaptris:interlok-core:$interlokVersion") { changing= true}
+  interlokRuntime ("com.adaptris:interlok-common:$interlokVersion") { changing= true}
+  interlokRuntime ("com.adaptris:interlok-boot:$interlokVersion") { changing=true }
+  interlokRuntime ("com.adaptris:interlok-logging:$interlokVersion") { changing=true }
+  interlokRuntime group: "com.adaptris", name: "interlok-varsub", version: interlokPatch.helperVersion(), changing: true
+
+  interlokRuntime ("org.slf4j:slf4j-api:$slf4jVersion")
+  interlokRuntime ("org.slf4j:jcl-over-slf4j:$slf4jVersion")
+  interlokRuntime ("org.slf4j:jul-to-slf4j:$slf4jVersion")
+
+  interlokRuntime (platform("org.apache.logging.log4j:log4j-bom:$log4j2Version"))
+  interlokRuntime ("org.apache.logging.log4j:log4j-core")
+  interlokRuntime ("org.apache.logging.log4j:log4j-1.2-api")
+  interlokRuntime ("org.apache.logging.log4j:log4j-slf4j2-impl")
+  interlokRuntime ("org.apache.logging.log4j:log4j-api")
+
+  interlokRuntime ("com.sun.mail:jakarta.mail:1.6.7")
+  interlokRuntime ("com.sun.activation:jakarta.activation:1.2.2")
+  interlokRuntime ("jakarta.validation:jakarta.validation-api:2.0.2")
+  // CVE-2021-39139 (4.2-SNAPSHOT is already at 1.4.18)
+  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.19")
+
+  interlokTestRuntime group: "com.adaptris", name: "interlok-service-tester", version: interlokPatch.serviceTesterVersion(), changing: true
+  interlokWar group: "com.adaptris.ui", name: "interlok", version: interlokPatch.uiVersion(), changing: true, ext: "war"
+
+  interlokVerify files("$interlokTmpConfigDirectory"){
+      builtBy 'localizeConfig'
+  }
+  interlokJavadocs group: "com.adaptris", name: "interlok-core", version: "$interlokVersion", classifier: "javadoc", changing: true, transitive: false
+  interlokJavadocs group: "com.adaptris", name: "interlok-common", version: "$interlokVersion", classifier: "javadoc", changing: true, transitive: false
+
+  interlokVerifyReport("com.adaptris:interlok-verify-report:3.2.0")
+
+  antJunit ("org.apache.ant:ant-junit:1.10.12")
+}
+
+task localizeConfig(type: Copy) {
+    from "${interlokSourceConfig}"
+    into "${interlokTmpConfigDirectory}"
+    doLast {
+        overwriteWithTemplate("log4j2.xml", "${interlokTmpConfigDirectory}")
+        additionalTemplatedConfiguration.each {
+          overwriteWithTemplate("${it}", "${interlokTmpConfigDirectory}")
+        }
+        overwriteWithPropertiesTemplate("variables-local", "${interlokTmpConfigDirectory}")
+        additionalTemplatedProperties.each {
+          overwriteWithPropertiesTemplate("${it}", "${interlokTmpConfigDirectory}")
+        }
+        ant.propertyfile(
+            file: "${interlokTmpConfigDirectory}/version.properties") {
+            entry( key: "build.version", value: "${version}")
+            entry( key: "interlok.core.version", value: "${interlokVersion}")
+            entry( key: "interlok.war.version", value: "${interlokUiVersion}")
+        }
+    }
+}
+
+task getServiceTestLog4j2 (){
+  outputs.file new File(interlokTmpServiceTestLog4j)
+  doLast {
+    mkdir(new File(interlokTmpServiceTestLog4j).getParentFile())
+    ant.get(src: serviceTestLog4j, dest: interlokTmpServiceTestLog4j, usetimestamp: 'true', quiet: 'true')
+  }
+}
+
+tasks.register("verifyLauncherJar", Jar) {
+    ext.verifyLauncherClasspath = { ->
+      def verifyLibs = [configurations.interlokRuntime.collect { asFileUrl(it.getCanonicalPath()) }.join(' '),
+              configurations.interlokVerify.collect { asFileUrl(it.getCanonicalPath()) + "/" }.join(' ')]
+      return verifyLibs.join(' ')
+    }
+    appendix = "verify-launcher"
+    manifest {
+        attributes ("Class-Path": verifyLauncherClasspath())
+    }
+}
+
+def interlokVersionReport = tasks.register("interlokVersionReport", JavaExec) {
+    group = 'Verification'
+    description = 'Show Interlok versions using -version'
+    doFirst {
+      if(new File("$interlokTmpConfigDirectory/log4j2.xml").exists()) {
+        ant.move file: "$interlokTmpConfigDirectory/log4j2.xml", tofile: "$interlokTmpConfigDirectory/log4j2.xml.bk"
+      }
+    }
+    workingDir = new File("${buildDir}/tmp")
+    classpath = files(verifyLauncherJar.archivePath)
+    systemProperties System.properties
+    systemProperty "interlok.logging.url", verifyLog4j
+
+    mainClass = 'com.adaptris.core.management.SimpleBootstrap'
+    args "-version"
+    doLast {
+      if(new File("$interlokTmpConfigDirectory/log4j2.xml.bk").exists()) {
+        ant.move file: "$interlokTmpConfigDirectory/log4j2.xml.bk", tofile: "$interlokTmpConfigDirectory/log4j2.xml"
+      }
+    }
+}
+
+interlokVersionReport.configure {
+    dependsOn localizeConfig, verifyLauncherJar
+}
+
+def interlokVerifyLog4j= tasks.register("interlokVerifyLog4j", JavaExec) {
+  group = 'Verification'
+  description = 'Interlok config test using -configtest reporting by parsing console output (pre 3.12)'
+  onlyIf{
+    !verifyReport.verifyViaConfigCheck()
+  }
+  doFirst {
+    if(new File("$interlokTmpConfigDirectory/log4j2.xml").exists()) {
+      ant.move file: "$interlokTmpConfigDirectory/log4j2.xml", tofile: "$interlokTmpConfigDirectory/log4j2.xml.bk"
+    }
+    verifyReport.init()
+  }
+  workingDir = new File("${buildDir}/tmp")
+  classpath = files(verifyLauncherJar.archivePath)
+  mainClass = 'com.adaptris.core.management.SimpleBootstrap'
+  args "-configtest"
+  environment loadPropertiesFromFile(interlokVerifyEnvironmentPropertiesFile)
+  environment project.hasProperty('interlokVerifyEnvironmentProperties') ? project.getProperty('interlokVerifyEnvironmentProperties') : [:]
+  // Pass through system properties.
+  systemProperties System.properties
+  systemProperties project.hasProperty('interlokVerifySystemProperties') ? project.getProperty('interlokVerifySystemProperties') : [:]
+  systemProperties interlokVerifyLicenseProperties
+  systemProperty "interlok.logging.url", verifyLog4j
+  standardOutput = new ByteArrayOutputStream()
+  doLast {
+    def verifyOutput = standardOutput.toString()
+    interlokVerifyTextReportFile.createNewFile()
+    verifyOutput.eachLine {
+      interlokVerifyTextReportFile.append(interlokVerifyPrefix + it + "\n")
+    }
+    if(new File("$interlokTmpConfigDirectory/log4j2.xml.bk").exists()) {
+      ant.move file: "$interlokTmpConfigDirectory/log4j2.xml.bk", tofile: "$interlokTmpConfigDirectory/log4j2.xml"
+    }
+  }
+}
+
+def interlokVerifyConfigCheck= tasks.register("interlokVerifyConfigCheck", JavaExec) {
+  group = 'Verification'
+  description = 'Interlok config test using -configtest reporting via a ConfigurationChecker implementation'
+  onlyIf{
+    verifyReport.verifyViaConfigCheck()
+  }
+  doFirst {
+    if(new File("$interlokTmpConfigDirectory/log4j2.xml").exists()) {
+      ant.move file: "$interlokTmpConfigDirectory/log4j2.xml", tofile: "$interlokTmpConfigDirectory/log4j2.xml.bk"
+    }
+    verifyReport.init()
+  }
+  workingDir = new File("${buildDir}/tmp")
+  classpath = files(verifyLauncherJar.archivePath)
+  mainClass = 'com.adaptris.core.management.SimpleBootstrap'
+  args "-configtest"
+  environment loadPropertiesFromFile(interlokVerifyEnvironmentPropertiesFile)
+  environment project.hasProperty('interlokVerifyEnvironmentProperties') ? project.getProperty('interlokVerifyEnvironmentProperties') : [:]
+  // Pass through system properties.
+  systemProperties System.properties
+  systemProperties project.hasProperty('interlokVerifySystemProperties') ? project.getProperty('interlokVerifySystemProperties') : [:]
+  systemProperties interlokVerifyLicenseProperties
+  systemProperty "interlok.verify.warning.filename", interlokVerifyTextReport
+  systemProperty "interlok.verify.warning.category", interlokVerifyCategory
+  systemProperty "interlok.verify.warning.level", interlokVerifyLevel
+  systemProperty "interlok.logging.url", verifyLog4j
+  doLast {
+    if(new File("$interlokTmpConfigDirectory/log4j2.xml.bk").exists()) {
+      ant.move file: "$interlokTmpConfigDirectory/log4j2.xml.bk", tofile: "$interlokTmpConfigDirectory/log4j2.xml"
+    }
+  }
+}
+
+
+def interlokVerify = tasks.register("interlokVerify") {
+  group = 'Verification'
+  description = 'Wrapper around interlokVerifyConfigCheck / interlokVerifyLog4j'
+  doLast {
+    verifyReport.verifyReportFile()
+  }
+}
+
+def interlokVerifyReport = tasks.register("interlokVerifyReport", JavaExec) {
+  group = 'Verification'
+  description = 'Create Interlok Sonarqube reports from config verification'
+  onlyIf{
+    // technicaly interlokVerify won't do work so interlokVerify.get().didWork won't be true...
+    // (interlokVerifyConfigCheck.get().didWork || interlokVerifyLog4j.get().didWork) && new File(interlokVerifyTextReport).exists()
+    interlokVerify.get().didWork && new File(interlokVerifyTextReport).exists()
+  }
+  mainClass = 'com.adaptris.verify.CreateVerifyReport'
+  classpath = configurations.interlokVerifyReport
+  args "--reportFile"
+  args interlokVerifyTextReport
+  args "--outputFile"
+  args interlokVerifySonarReport
+}
+
+interlokVerify.configure {
+  dependsOn interlokVerifyConfigCheck, interlokVerifyLog4j
+  finalizedBy interlokVerifyReport
+}
+
+interlokVerifyConfigCheck.configure {
+  dependsOn localizeConfig, verifyLauncherJar
+}
+
+interlokVerifyLog4j.configure {
+  dependsOn localizeConfig, verifyLauncherJar
+}
+
+tasks.register("serviceTesterLauncherJar", Jar) {
+    appendix = "service-tester-launcher"
+    ext.serviceTesterClasspath = { ->
+      def testerLibs = [
+              configurations.interlokTestRuntime.collect { asFileUrl(it.getCanonicalPath()) }.join(' '),
+              asFileUrl(new File(interlokTmpServiceTestLog4j).getParentFile().getCanonicalPath()) + "/"]
+      return testerLibs.join(' ')
+    }
+    manifest {
+        attributes ("Class-Path": serviceTesterClasspath())
+    }
+}
+
+def interlokServiceTest = tasks.register("interlokServiceTest", JavaExec) {
+    group = 'Test'
+    description = 'Execute Interlok service tests'
+    onlyIf {
+      new File(interlokServiceTestDefinition).exists()
+    }
+    mainClass = 'com.adaptris.tester.runners.TestExecutor'
+    classpath = files(serviceTesterLauncherJar.archivePath)
+    args "-serviceTest"
+    args interlokServiceTestDefinition
+    args "-serviceTestOutput"
+    args interlokServiceTestOutput
+}
+
+interlokServiceTest.configure {
+    dependsOn getServiceTestLog4j2, serviceTesterLauncherJar
+    finalizedBy interlokServiceTestReport
+}
+
+task interlokServiceTestReport {
+    group = 'Test'
+    description = 'Create Interlok service test reports'
+    onlyIf{
+      interlokServiceTest.get().didWork && new File(interlokServiceTestOutput).exists()
+    }
+    doLast {
+      mkdir interlokServiceTestReportDir
+      ant.taskdef(
+        name: 'junitreport',
+        classname: 'org.apache.tools.ant.taskdefs.optional.junit.XMLResultAggregator',
+        classpath: configurations.antJunit.asPath
+      )
+
+      ant.junitreport(todir: interlokServiceTestReportDir) {
+        fileset(dir: interlokServiceTestOutput, includes: '**/TEST-*.xml')
+        report(todir: interlokServiceTestReportDir, format: "frames")
+      }
+    }
+}
+
+task serviceTesterDist(type: Copy) {
+  onlyIf {
+    buildDetails.isDevMode()
+  }
+  from project.configurations.interlokTestRuntime
+  into interlokTmpLibDirectory
+}
+
+task interlokWarDist(type: Copy) {
+  onlyIf {
+    buildDetails.isIncludeWar()
+  }
+  from project.configurations.interlokWar
+  into interlokTmpWarDirectory
+}
+
+task interlokJavadocsDist(type: Copy) {
+  onlyIf {
+    buildDetails.isIncludeWar()
+  }
+  from project.configurations.interlokJavadocs
+  into interlokTmpDocsDirectory
+}
+
+distributions {
+    main {
+        contents {
+            def usedFileNames = new HashSet()
+            into('') {
+                from ("src/main/interlok")
+                exclude "config"
+            }
+            into('config') {
+                from(localizeConfig)
+            }
+            into('lib') {
+                def libs = new HashSet()
+                from(project.configurations.interlokRuntime)
+                from(serviceTesterDist)
+                eachFile {
+                    // In dev mode, dependencies from serviceTesterDist may conflict
+                    // with interlokRuntime dependencies. This stops the same JAR being included with the suffix _1
+                    if (!libs.add(it.sourceName)) {
+                        it.exclude()
+                    }
+                }
+            }
+            into('webapps') {
+                from(interlokWarDist)
+            }
+            into('docs/javadocs') {
+              from(interlokJavadocsDist)
+            }
+            // Doing: rename '(.*)-[0-9]+\\..*.jar', '$1.jar'
+            // but also add an index if a file name already exists
+            rename { filename ->
+                return renameJarFile(filename, usedFileNames)
+            }
+            rename '(.*)-[0-9]+\\..*.war', '$1.war'
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        }
+    }
+}
+
+def renameJarFile(filename, usedFileNames) {
+    def ignorableClassifiers = [
+      "RELEASE-javadoc", "SNAPSHOT-javadoc",
+      "javadoc", "RELEASE", "SNAPSHOT",
+      // hibernate-validator-6.1.7.Final.jar (and netty)
+      "Final",
+      // Jetty has jetty-continuation-9.4.45.v20220203.jar
+      'v[0-9]+',
+      // opendmk_jmxremote_optional_jar-1.0-b01-ea.jar
+      // javax.el-3.0.1-b12.jar
+      '^[ab][0-9]+.*',
+      // org.apache.servicemix.bundles.jzlib-1.0.7_2.jar
+      '_[0-9]+',
+      //scalaz-stream_2.11-0.7.3a.jar
+      '^[ab]$'
+    ]
+    if (filename ==~ '(.*)\\.jar') {
+        def basename=filename.replaceFirst('(.*)\\.jar', '$1')
+        if (filename ==~ '(.*)-[0-9\\.]+(.*).jar') {
+          basename=filename.replaceFirst('(.*)-[0-9\\.]+(.*).jar', '$1')
+          def classifier=filename.replaceFirst('(.*)-[0-9\\.]+(.*).jar', '$2').replaceFirst('-', "")
+          ignorableClassifiers.each {
+            classifier=classifier.replaceFirst(it, "");
+          }
+          if (classifier?.trim()) {
+            basename=basename + "-" + classifier
+          }
+        }
+        def isJavadoc = filename ==~ '(.*)-javadoc\\.jar'
+        filename = "${basename}.jar"
+        def index = 1
+        // At this point jars and javadoc jars can have the same name
+        // so we differentiate them with the boolean 'isJavadoc'
+        while (!usedFileNames.add("$filename $isJavadoc")) {
+            filename = "${basename}_${index}.jar"
+            index++
+        }
+    }
+    return filename
+}
+
+installDist {
+    destinationDir = new File(interlokDistDirectory)
+}
+
+// dependencyCheckAnalyze {
+//   onlyIf {
+//     !buildDetails.isDevMode()
+//   }
+// }
+
+task checkJavaVersion {
+  doLast {
+    if (interlokVersion.startsWith("4")) {
+      if (JavaVersion.current().ordinal() < JavaVersion.VERSION_11.ordinal()) {
+        throw new GradleException("We're running with " + JavaVersion.current() + " and not Java 11")
+      }
+    }
+  }
+}
+
+dependencyCheck  {
+  suppressionFiles= [ "https://raw.githubusercontent.com/adaptris/interlok/develop/gradle/owasp-exclude.xml" ]
+  scanConfigurations = buildDetails.isIncludeWar() ? [ "interlokWar", "interlokRuntime" ] : [ "interlokRuntime" ]
+  failBuildOnCVSS = 7
+  formats = [ "HTML", "JUNIT" ]
+  analyzers {
+    assemblyEnabled=false
+  }
+}
+
+// check.dependsOn dependencyCheckAnalyze,interlokVerify,interlokServiceTest,interlokVersionReport
+check.dependsOn checkJavaVersion,interlokVerify,interlokServiceTest,interlokVersionReport
+assemble.dependsOn installDist
