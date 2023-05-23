@@ -5,7 +5,7 @@ buildscript {
     maven { url 'https://plugins.gradle.org/m2/' }
   }
   dependencies {
-    classpath 'org.owasp:dependency-check-gradle:7.2.1'
+    classpath 'org.owasp:dependency-check-gradle:8.2.1'
   }
 }
 
@@ -19,7 +19,7 @@ ext {
   log4j2Version='2.19.0'
   slf4jVersion='2.0.3'
   // Make semi-required optional components have an explicit version
-  interlokVersion = project.findProperty('interlokVersion') ?: '4.8.0-RELEASE'
+  interlokVersion = project.findProperty('interlokVersion') ?: '5.0-SNAPSHOT'
   interlokHelperVersion = project.findProperty('interlokVersion') ?: interlokVersion
   interlokServiceTesterVersion = project.findProperty('interlokServiceTesterVersion') ?: interlokVersion
   interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
@@ -625,9 +625,9 @@ installDist {
 
 task checkJavaVersion {
   doLast {
-    if (interlokVersion.startsWith("4")) {
-      if (JavaVersion.current().ordinal() < JavaVersion.VERSION_11.ordinal()) {
-        throw new GradleException("We're running with " + JavaVersion.current() + " and not Java 11")
+    if (interlokVersion.startsWith("5")) {
+      if (JavaVersion.current().ordinal() < JavaVersion.VERSION_17.ordinal()) {
+        throw new GradleException("We're running with " + JavaVersion.current() + " and not Java 17")
       }
     }
   }
