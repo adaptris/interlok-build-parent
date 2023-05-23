@@ -1,5 +1,8 @@
 # interlok-build-parent
-[![GitHub tag](https://img.shields.io/github/tag/adaptris/interlok-build-parent.svg)](https://github.com/adaptris/interlok-build-parent/tags) ![license](https://img.shields.io/github/license/adaptris/interlok-build-parent.svg)
+[![GitHub tag](https://img.shields.io/github/tag/adaptris/interlok-build-parent.svg)](https://github.com/adaptris/interlok-build-parent/tags)
+[![license](https://img.shields.io/github/license/adaptris/interlok-build-parent.svg)](https://github.com/adaptris/interlok-build-parent/blob/develop/LICENSE)
+[![Actions Status](https://github.com/adaptris/interlok-build-parent/actions/workflows/test.yml/badge.svg)](https://github.com/adaptris/interlok-build-parent/actions)
+[![Closed PRs](https://img.shields.io/github/issues-pr-closed/adaptris/interlok-build-parent)](https://github.com/adaptris/interlok-build-parent/pulls?q=is%3Apr+is%3Aclosed)
 
 This is a gradle file that can be applied to your gradle file to simplify things bootstrapping your Interlok project. Gradle 5.x+ is required. Note that `mavenCentral()` doesn't appear to be available if we execute using gradle-5.2, but is available on gradle-5.6.3. We have tested with gradle-5.6.3 so YMMV to be honest vis-a-vis the gradle version.
 
