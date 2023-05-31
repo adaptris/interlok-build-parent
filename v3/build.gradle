@@ -219,7 +219,7 @@ dependencies {
   interlokRuntime ("jakarta.validation:jakarta.validation-api:2.0.2")
 
   interlokRuntime ("org.eclipse.jetty.aggregate:jetty-all:9.4.43.v20210629")
-  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.19")
+  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.20")
 
   interlokRuntime ("org.apache.activemq:activemq-client:5.16.4") {
     exclude group: "org.apache.geronimo.specs", module: "geronimo-jms_1.1_spec"
