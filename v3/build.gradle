@@ -16,7 +16,7 @@ apply plugin: "java-library"
 ext {
   localInterlokRepo = project.findProperty('localInterlokRepo') ?: 'unknown'
   nexusBaseUrl  = 'https://nexus.adaptris.net'
-  log4j2Version='2.19.0'
+  log4j2Version='2.20.0'
   slf4jVersion='2.0.6'
   interlokVersion = project.findProperty('interlokVersion') ?: '3.12.0-RELEASE'
   // interlok-core is patched to 3.12.0.3-RELEASE
