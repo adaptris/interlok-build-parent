@@ -5,7 +5,7 @@ buildscript {
     maven { url 'https://plugins.gradle.org/m2/' }
   }
   dependencies {
-    classpath 'org.owasp:dependency-check-gradle:7.2.1'
+    classpath 'org.owasp:dependency-check-gradle:8.2.1'
   }
 }
 
@@ -17,9 +17,9 @@ ext {
   localInterlokRepo = project.findProperty('localInterlokRepo') ?: 'unknown'
   nexusBaseUrl  = 'https://nexus.adaptris.net'
   log4j2Version='2.19.0'
-  slf4jVersion='2.0.6'
+  slf4jVersion='2.0.3'
   // Make semi-required optional components have an explicit version
-  interlokVersion = project.findProperty('interlokVersion') ?: '4.8.0-RELEASE'
+  interlokVersion = project.findProperty('interlokVersion') ?: '5.0-SNAPSHOT'
   interlokHelperVersion = project.findProperty('interlokVersion') ?: interlokVersion
   interlokServiceTesterVersion = project.findProperty('interlokServiceTesterVersion') ?: interlokVersion
   interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
@@ -265,7 +265,7 @@ dependencies {
   interlokRuntime ("com.sun.activation:jakarta.activation:1.2.2")
   interlokRuntime ("jakarta.validation:jakarta.validation-api:2.0.2")
   // CVE-2021-39139 (4.2-SNAPSHOT is already at 1.4.18)
-  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.20")
+  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.19")
 
   interlokTestRuntime group: "com.adaptris", name: "interlok-service-tester", version: interlokPatch.serviceTesterVersion(), changing: true
   interlokWar group: "com.adaptris.ui", name: "interlok", version: interlokPatch.uiVersion(), changing: true, ext: "war"
@@ -278,7 +278,7 @@ dependencies {
 
   interlokVerifyReport("com.adaptris:interlok-verify-report:3.2.0")
 
-  antJunit ("org.apache.ant:ant-junit:1.10.13")
+  antJunit ("org.apache.ant:ant-junit:1.10.12")
 }
 
 task localizeConfig(type: Copy) {
@@ -625,9 +625,9 @@ installDist {
 
 task checkJavaVersion {
   doLast {
-    if (interlokVersion.startsWith("4")) {
-      if (JavaVersion.current().ordinal() < JavaVersion.VERSION_11.ordinal()) {
-        throw new GradleException("We're running with " + JavaVersion.current() + " and not Java 11")
+    if (interlokVersion.startsWith("5")) {
+      if (JavaVersion.current().ordinal() < JavaVersion.VERSION_17.ordinal()) {
+        throw new GradleException("We're running with " + JavaVersion.current() + " and not Java 17")
       }
     }
   }
