@@ -8,6 +8,19 @@ registries:
 
 updates:
   - package-ecosystem: "gradle"
+    directory: "/v5"
+    open-pull-requests-limit: 20
+    registries:
+      - "interlok"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-type: "all"
+    reviewers:
+      - aaron-mcgrath-adp
+      - sebastien-belin-adp
+      - higgyfella
+  - package-ecosystem: "gradle"
     directory: "/v4"
     open-pull-requests-limit: 20
     registries:

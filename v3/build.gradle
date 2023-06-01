@@ -16,8 +16,8 @@ apply plugin: "java-library"
 ext {
   localInterlokRepo = project.findProperty('localInterlokRepo') ?: 'unknown'
   nexusBaseUrl  = 'https://nexus.adaptris.net'
-  log4j2Version='2.19.0'
-  slf4jVersion='2.0.3'
+  log4j2Version='2.20.0'
+  slf4jVersion='2.0.7'
   interlokVersion = project.findProperty('interlokVersion') ?: '3.12.0-RELEASE'
   // interlok-core is patched to 3.12.0.3-RELEASE
   // Check the if statement in the dependencies block.
@@ -219,7 +219,7 @@ dependencies {
   interlokRuntime ("jakarta.validation:jakarta.validation-api:2.0.2")
 
   interlokRuntime ("org.eclipse.jetty.aggregate:jetty-all:9.4.43.v20210629")
-  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.19")
+  interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.20")
 
   interlokRuntime ("org.apache.activemq:activemq-client:5.16.4") {
     exclude group: "org.apache.geronimo.specs", module: "geronimo-jms_1.1_spec"
@@ -238,7 +238,7 @@ dependencies {
 
   interlokVerifyReport("com.adaptris:interlok-verify-report:2.2.0")
 
-  antJunit ("org.apache.ant:ant-junit:1.10.12")
+  antJunit ("org.apache.ant:ant-junit:1.10.13")
 }
 
 task localizeConfig(type: Copy) {
