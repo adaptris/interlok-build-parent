@@ -561,12 +561,13 @@ distributions {
             into('docs/javadocs') {
               from(interlokJavadocsDist)
             }
-            // Doing: rename '(.*)-[0-9]+\\..*.jar', '$1.jar'
+            // Doing: rename '(.*)-[0-9\\.AB]+\\..*.jar', '$1.jar'
+            // AB is for Alpha or Beta versions
             // but also add an index if a file name already exists
             rename { filename ->
                 return renameJarFile(filename, usedFileNames)
             }
-            rename '(.*)-[0-9]+\\..*.war', '$1.war'
+            rename '(.*)-[0-9\\.AB]+\\..*.war', '$1.war'
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
     }
@@ -589,10 +590,12 @@ def renameJarFile(filename, usedFileNames) {
       '^[ab]$'
     ]
     if (filename ==~ '(.*)\\.jar') {
+        // AB is for Alpha or Beta versions
+	    def jarNamePattern = '(.*)-[0-9\\.AB]+(.*).jar'
         def basename=filename.replaceFirst('(.*)\\.jar', '$1')
-        if (filename ==~ '(.*)-[0-9\\.]+(.*).jar') {
-          basename=filename.replaceFirst('(.*)-[0-9\\.]+(.*).jar', '$1')
-          def classifier=filename.replaceFirst('(.*)-[0-9\\.]+(.*).jar', '$2').replaceFirst('-', "")
+        if (filename ==~ jarNamePattern) {
+          basename=filename.replaceFirst(jarNamePattern, '$1')
+          def classifier=filename.replaceFirst(jarNamePattern, '$2').replaceFirst('-', "")
           ignorableClassifiers.each {
             classifier=classifier.replaceFirst(it, "");
           }
