@@ -505,6 +505,7 @@ task interlokServiceTestReport {
         fileset(dir: interlokServiceTestOutput, includes: '**/TEST-*.xml')
         report(todir: interlokServiceTestReportDir, format: "frames")
       }
+      logger.lifecycle("Service tester report available at [$interlokServiceTestReportDir]")
     }
 }
 
