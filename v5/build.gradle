@@ -506,6 +506,7 @@ task interlokServiceTestReport {
         report(todir: interlokServiceTestReportDir, format: "frames")
       }
     }
+    logger.lifecycle("Service tester report available at [$interlokServiceTestReportDir]")
 }
 
 task serviceTesterDist(type: Copy) {
