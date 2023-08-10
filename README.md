@@ -4,18 +4,18 @@
 [![Actions Status](https://github.com/adaptris/interlok-build-parent/actions/workflows/test.yml/badge.svg)](https://github.com/adaptris/interlok-build-parent/actions)
 [![Closed PRs](https://img.shields.io/github/issues-pr-closed/adaptris/interlok-build-parent)](https://github.com/adaptris/interlok-build-parent/pulls?q=is%3Apr+is%3Aclosed)
 
-This is a gradle file that can be applied to your gradle file to simplify things bootstrapping your Interlok project. Gradle 5.x+ is required. Note that `mavenCentral()` doesn't appear to be available if we execute using gradle-5.2, but is available on gradle-5.6.3. We have tested with gradle-5.6.3 so YMMV to be honest vis-a-vis the gradle version.
+This is a gradle file that can be applied to your gradle file to simplify things bootstrapping your Interlok project. Gradle 7.6.x is required. We have tested with gradle-7.6.1 so YMMV to be honest vis-a-vis the gradle version.
 
-## v3 vs v4
+## v3 vs v4 vs v5
 
-Since Interlok 3.x differs from Interlok 4.x there are separate gradle files that support their respective versions. We don't anticipate making very many more changes to the `v3/` variant and most of the work is going to be focussed on the `v4/` variant.
+Since Interlok 3.x differs from Interlok 4.x and 5.x there are separate gradle files that support their respective versions. We don't anticipate making very many more changes to the `v3/` variant and just a little on v4/ variant, most of the work is going to be focussed on the `v5/` variant.
 
 ## Usage
 
 ```
 // build.gradle
 ext {
-  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v3/build.gradle"
+  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v4/build.gradle"
 }
 
 allprojects {
@@ -36,7 +36,7 @@ Or you can override version:
 ext {
   interlokVersion = '3.9.2-RELEASE'
   interlokUiVersion = interlokVersion
-  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v3/build.gradle"
+  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v4/build.gradle"
 }
 
 allprojects {
