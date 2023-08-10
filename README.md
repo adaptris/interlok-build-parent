@@ -12,7 +12,7 @@ Since Interlok 3.x differs from Interlok 4.x and 5.x there are separate gradle f
 
 ## Usage
 
-```
+```kotlin
 // build.gradle
 ext {
   interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v4/build.gradle"
@@ -31,7 +31,7 @@ dependencies {
 
 Or you can override version:
 
-```
+```kotlin
 // build.gradle
 ext {
   interlokVersion = '3.9.2-RELEASE'
@@ -61,7 +61,7 @@ A full example with configuration is here : [build-parent-json-csv](https://gith
 
 ## Next steps
 
-```
+```shell
 cd ./build/distribution
 java -jar lib/interlok-boot.jar
 ```
@@ -90,7 +90,7 @@ If you have a local repository that you want to use (e.g. you have custom compon
 
 If you need additional build specific configuration, these can be added by setting the follow properties `additionalTemplatedConfiguration` or `additionalTemplatedProperties` in your build.gradle (in the `ext{}` block) :
 
-```
+```kotlin
 additionalTemplatedConfiguration = [
   'jetty.xml'
 ]
@@ -114,7 +114,7 @@ Template files are named slightly differently to property files since the expect
 
 If you are expecting environment variables and system properties to be injected at runtime by your build pipeline, then you can spoof those things by setting two additional variables in your build.gradle, `interlokVerifyEnvironmentProperties` & `interlokVerifySystemProperties` respectively; this will makes `check` work w/o you defining additional properties.
 
-```
+```kotlin
 interlokVerifyEnvironmentProperties = [
   DB_HOST: "localhost",
   DB_PORT: "3306",
