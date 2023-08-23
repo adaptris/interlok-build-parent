@@ -19,7 +19,7 @@ ext {
   log4j2Version='2.20.0'
   slf4jVersion='2.0.7'
   // Make semi-required optional components have an explicit version
-  interlokVersion = project.findProperty('interlokVersion') ?: '4.8.0-RELEASE'
+  interlokVersion = project.findProperty('interlokVersion') ?: '4.9.0-RELEASE'
   interlokHelperVersion = project.findProperty('interlokVersion') ?: interlokVersion
   interlokServiceTesterVersion = project.findProperty('interlokServiceTesterVersion') ?: interlokVersion
   interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
@@ -278,7 +278,7 @@ dependencies {
 
   interlokVerifyReport("com.adaptris:interlok-verify-report:3.2.0")
 
-  antJunit ("org.apache.ant:ant-junit:1.10.13")
+  antJunit ("org.apache.ant:ant-junit:1.10.14")
 }
 
 task localizeConfig(type: Copy) {
