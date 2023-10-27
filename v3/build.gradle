@@ -19,14 +19,15 @@ ext {
   log4j2Version='2.21.0'
   slf4jVersion='2.0.9'
   interlokVersion = project.findProperty('interlokVersion') ?: '3.12.0-RELEASE'
-  // interlok-core is patched to 3.12.0.3-RELEASE
+  // interlok-core is patched to 3.12.0.4-RELEASE
   // Check the if statement in the dependencies block.
-  interlokCorePatchVersion = project.findProperty('interlokCorePatchVersion') ?: '3.12.0.3-RELEASE'
+  interlokCorePatchVersion = project.findProperty('interlokCorePatchVersion') ?: '3.12.0.4-RELEASE'
   requiresCorePatchVersion = "3.12.0-RELEASE"
 
   verifyReportConfigCheckAvailable = '3.12-SNAPSHOT'
-  
-  interlokUiVersion = project.findProperty('interlokUiVersion') ?: interlokVersion
+
+  // We use the UI patch version (3.12.0.1-RELEASE) as default if Interlok version is 3.12.0-RELEASE
+  interlokUiVersion = project.findProperty('interlokUiVersion') ?: (interlokVersion == '3.12.0-RELEASE' ? '3.12.0.1-RELEASE' : interlokVersion)
   
   interlokSourceConfig = "${projectDir}/src/main/interlok/config"
   interlokTmpConfigDirectory = "${buildDir}/tmp/config"
@@ -194,7 +195,7 @@ repositories {
 dependencies {
 
   // If our interlokVersion is set to anything other than 3.12.0-RELEASE then use that
-  // If it is set to 3.12.0-RELEASE then use 3.12.0.3-RELEASE version of Interlokv3.
+  // If it is set to 3.12.0-RELEASE then use 3.12.0.4-RELEASE version of Interlokv3.
   if (interlokVersion.endsWith("SNAPSHOT") || !buildDetails.requiresCorePatch()) {
     interlokRuntime ("com.adaptris:interlok-core:$interlokVersion") { changing= true}
     interlokRuntime ("com.adaptris:interlok-common:$interlokVersion") { changing= true}
