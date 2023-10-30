@@ -5,7 +5,7 @@ buildscript {
     maven { url 'https://plugins.gradle.org/m2/' }
   }
   dependencies {
-    classpath 'org.owasp:dependency-check-gradle:8.4.0'
+    classpath 'org.owasp:dependency-check-gradle:8.4.2'
   }
 }
 
@@ -16,7 +16,7 @@ apply plugin: "java-library"
 ext {
   localInterlokRepo = project.findProperty('localInterlokRepo') ?: 'unknown'
   nexusBaseUrl  = 'https://nexus.adaptris.net'
-  log4j2Version='2.21.0'
+  log4j2Version='2.21.1'
   slf4jVersion='2.0.9'
   // Make semi-required optional components have an explicit version
   interlokVersion = project.findProperty('interlokVersion') ?: '5.0-SNAPSHOT'
