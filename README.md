@@ -15,7 +15,7 @@ Since Interlok 3.x differs from Interlok 4.x and 5.x there are separate gradle f
 ```kotlin
 // build.gradle
 ext {
-  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v4/build.gradle"
+  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v5/build.gradle"
 }
 
 allprojects {
@@ -34,9 +34,9 @@ Or you can override version:
 ```kotlin
 // build.gradle
 ext {
-  interlokVersion = '3.9.2-RELEASE'
+  interlokVersion = '5.0.0-RELEASE'
   interlokUiVersion = interlokVersion
-  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v4/build.gradle"
+  interlokParentGradle = "https://raw.githubusercontent.com/adaptris/interlok-build-parent/main/v5/build.gradle"
 }
 
 allprojects {
