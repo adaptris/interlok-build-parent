@@ -8,7 +8,7 @@ This is a gradle file that can be applied to your gradle file to simplify things
 
 ## v3 vs v4 vs v5
 
-Since Interlok 3.x differs from Interlok 4.x and 5.x there are separate gradle files that support their respective versions. We don't anticipate making very many more changes to the `v3/` variant and just a little on v4/ variant, most of the work is going to be focussed on the `v5/` variant.
+Since Interlok 3.x differs from Interlok 4.x and 5.x there are separate gradle files that support their respective versions. We don't anticipate making very many more changes to the `v3/` variant and just a little on `v4/` variant, most of the work is going to be focussed on the `v5/` variant.
 
 ## Usage
 
