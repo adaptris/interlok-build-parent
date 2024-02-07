@@ -627,15 +627,33 @@ installDist {
 //   }
 // }
 
-task checkJavaVersion {
+task checkDeveloperEnv {
+  description = 'Check minimum environment configurations'
   doLast {
-    if (interlokVersion.startsWith("4")) {
-      if (JavaVersion.current().ordinal() < JavaVersion.VERSION_11.ordinal()) {
-        throw new GradleException("We're running with " + JavaVersion.current() + " and not Java 11")
-      }
+    // Check Java version, we should be on 11 at least
+    if (JavaVersion.current().ordinal() < JavaVersion.VERSION_11.ordinal()) {
+      project.logger.error("Running with older Java version: "+ JavaVersion.current())
+      throw new GradleException("Environment not configured with a min of JDK 11!")
     }
+    
+    // Check interlok version, should be 4+
+    if (!interlokVersion.startsWith("4")) {
+      project.logger.error("InterlokVersion set to: $interlokVersion")
+      throw new GradleException("Need to be configured to build V4 Interlok!")
+    }
+    
+    // Check the gradle version being used.
+    def gradleVersion = VersionNumber.parse(gradle.gradleVersion)
+    String gradleToggleUrl = "https://gitlab.proagrica-tooling.dev/devops/config/toggles/-/raw/master/src/gradle/stable"
+    def toggleGradleVersion = VersionNumber.parse(gradleToggleUrl.toURL().text)
+    if (gradleVersion.getMajor() < toggleGradleVersion.getMajor()) {
+      throw new GradleException("Environment not configured with recommended gradle version of: $toggleGradleVersion!")
+    }
+    
+    project.logger.info("Developer environment is well configured")
   }
 }
+
 
 dependencyCheck  {
   suppressionFiles= [ "https://raw.githubusercontent.com/adaptris/interlok/develop/gradle/owasp-exclude.xml" ]
@@ -648,5 +666,5 @@ dependencyCheck  {
 }
 
 // check.dependsOn dependencyCheckAnalyze,interlokVerify,interlokServiceTest,interlokVersionReport
-check.dependsOn checkJavaVersion,interlokVerify,interlokServiceTest,interlokVersionReport
+check.dependsOn checkDeveloperEnv,interlokVerify,interlokServiceTest,interlokVersionReport
 assemble.dependsOn installDist
