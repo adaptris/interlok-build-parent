@@ -568,7 +568,7 @@ distributions {
             rename { filename ->
                 return renameJarFile(filename, usedFileNames)
             }
-            rename '(.*)-[0-9\\.AB]+\\..*.war', '$1.war'
+            rename '(.*)-[0-9\\.AB]+\\..*.(war|lic|license)', '$1.$2'
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
     }
