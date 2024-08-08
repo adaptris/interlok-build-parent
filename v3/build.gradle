@@ -226,7 +226,7 @@ dependencies {
   interlokRuntime ("org.eclipse.jetty.aggregate:jetty-all:9.4.53.v20231009")
   interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.20")
 
-  interlokRuntime ("org.apache.activemq:activemq-client:5.16.4") {
+  interlokRuntime ("org.apache.activemq:activemq-client:6.1.3") {
     exclude group: "org.apache.geronimo.specs", module: "geronimo-jms_1.1_spec"
   }
 
