@@ -262,7 +262,7 @@ dependencies {
   interlokRuntime ("org.apache.logging.log4j:log4j-api")
 
   interlokRuntime ("com.sun.mail:jakarta.mail:1.6.7")
-  interlokRuntime ("com.sun.activation:jakarta.activation:1.2.2")
+  interlokRuntime ("com.sun.activation:jakarta.activation:2.0.1")
   interlokRuntime ("jakarta.validation:jakarta.validation-api:2.0.2")
   // CVE-2021-39139 (4.2-SNAPSHOT is already at 1.4.18)
   interlokRuntime ("com.thoughtworks.xstream:xstream:1.4.20")
