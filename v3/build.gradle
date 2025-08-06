@@ -152,7 +152,6 @@ configurations {
     all*.exclude group: 'javamail'
     all*.exclude group: 'javax.mail', module: 'mail'
     all*.exclude group: 'org.glassfish.hk2.external'
-    all*.exclude group: 'xalan', module: 'xalan'
     all*.exclude group: 'net.sf.saxon', module: 'saxon'
     // Exclude because com.fasterxml.woodstox:woodstox-core should take precedence
     // however, stax2-api still lives on in the org.codehaus.woodstox group
@@ -509,6 +508,7 @@ distributions {
                 return renameJarFile(filename, usedFileNames)
             }
             rename '(.*)-[0-9\\.AB]+\\..*.war', '$1.war'
+            rename '(saxon)-ee-(license)-[0-9]+\\..*.(lic)', '$1-$2.$3'
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
     }
