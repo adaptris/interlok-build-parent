@@ -402,6 +402,7 @@ def interlokVerifyConfigCheck= tasks.register("interlokVerifyConfigCheck", JavaE
   jvmArgs "--add-opens","java.base/java.lang=ALL-UNNAMED"
   jvmArgs "--add-opens","java.base/java.util=ALL-UNNAMED"
   jvmArgs "--add-opens","java.base/java.util.concurrent=ALL-UNNAMED"
+  jvmArgs "--add-opens","java.base/java.time=ALL-UNNAMED"
   environment loadPropertiesFromFile(interlokVerifyEnvironmentPropertiesFile)
   environment project.hasProperty('interlokVerifyEnvironmentProperties') ? project.getProperty('interlokVerifyEnvironmentProperties') : [:]
   // Pass through system properties.
