@@ -18,7 +18,6 @@ ext {
   nexusBaseUrl  = 'https://nexus.adaptris.net'
   log4j2Version='2.24.3'
   slf4jVersion='2.0.16'
-  jacksonVersion='2.22.1'
   // Make semi-required optional components have an explicit version
   interlokVersion = project.findProperty('interlokVersion') ?: '5.0.3-RELEASE'
   interlokHelperVersion = project.findProperty('interlokVersion') ?: interlokVersion
@@ -245,9 +244,6 @@ repositories {
 }
 
 dependencies {
-  interlokRuntime (platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
-  interlokWar (platform("com.fasterxml.jackson:jackson-bom:$jacksonVersion"))
-
   interlokRuntime ("com.adaptris:interlok-core:$interlokVersion") { changing= true}
   interlokRuntime ("com.adaptris:interlok-common:$interlokVersion") { changing= true}
   interlokRuntime ("com.adaptris:interlok-boot:$interlokVersion") { changing=true }
